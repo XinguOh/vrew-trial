@@ -1,9 +1,6 @@
 import { useState } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { MainBar } from "./components/MainBar";
-import { SubBar } from "./components/SubBar";
-import { MainActions } from "./components/MainActions";
-import { EditorPage } from "./components/EditorPage";
+import { EditorPage, HomePage } from "./pages";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -20,13 +17,7 @@ function App() {
         <Routes>
           {/* 메인 페이지 */}
           <Route path="/" element={
-            <>
-              <MainBar isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
-              <SubBar isDarkMode={isDarkMode} />
-              <div className="pt-32">
-                <MainActions isDarkMode={isDarkMode} />
-              </div>
-            </>
+            <HomePage isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
           } />
           
           {/* 편집 페이지 */}
