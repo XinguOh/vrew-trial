@@ -1,12 +1,5 @@
 import { useRef, useEffect, useState } from "react";
-
-interface VideoClip {
-  id: string;
-  file: File;
-  url: string;
-  name: string;
-  duration: number;
-}
+import type { VideoClip } from "../../types";
 
 interface TimelineProps {
   clips: VideoClip[];
@@ -265,4 +258,3 @@ export function Timeline({
     </div>
   );
 }
-

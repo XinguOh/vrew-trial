@@ -54,4 +54,3 @@ export function MainActions({ isDarkMode }: MainActionsProps) {
     </div>
   );
 }
-  
