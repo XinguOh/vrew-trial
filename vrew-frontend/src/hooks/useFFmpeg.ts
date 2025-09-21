@@ -25,8 +25,15 @@ export function useFFmpeg() {
             setExportState(prev => ({ ...prev, progress }));
           });
           
+          // 초기화 후 실제 테스트 수행
+          console.log('🧪 FFmpeg 초기화 후 테스트 시작...');
+          const testResult = await ffmpegService.testFFmpeg();
+          if (!testResult) {
+            throw new Error('FFmpeg 초기화는 완료되었지만 실제 작동 테스트에 실패했습니다.');
+          }
+          
           setIsFFmpegLoaded(true);
-          console.log('FFmpeg 초기화 성공!');
+          console.log('✅ FFmpeg 초기화 및 테스트 성공!');
           break;
         } catch (error) {
           retryCount++;
@@ -70,10 +77,26 @@ export function useFFmpeg() {
     
     console.log(`영상 추출 시도 - 훅 상태: ${isFFmpegLoaded}, 서비스 상태: ${actuallyLoaded}, 클립 개수: ${clips.length}`);
     
-    if (!isFFmpegLoaded || !actuallyLoaded) {
-      console.error('FFmpeg 로드 상태 확인 실패');
+    // 상태 동기화 문제 해결: 서비스 상태가 true면 훅 상태도 업데이트
+    if (actuallyLoaded && !isFFmpegLoaded) {
+      console.log('🔄 상태 동기화: 서비스가 로드됨, 훅 상태 업데이트');
+      setIsFFmpegLoaded(true);
+      setFFmpegError(null);
+    }
+    
+    if (!actuallyLoaded) {
+      console.error('FFmpeg 로드 상태 확인 실패 - 서비스 상태가 false');
       throw new Error('FFmpeg가 아직 로드되지 않았습니다. 잠시 후 다시 시도해주세요.');
     }
+    
+    // 실제 FFmpeg 테스트 실행
+    console.log('🧪 FFmpeg 실제 작동 테스트 시작...');
+    const testResult = await ffmpegService.testFFmpeg();
+    if (!testResult) {
+      console.error('FFmpeg 테스트 실패');
+      throw new Error('FFmpeg가 로드되었지만 실제로 작동하지 않습니다. 페이지를 새로고침하고 다시 시도해주세요.');
+    }
+    console.log('✅ FFmpeg 테스트 통과');
     
     if (clips.length === 0) {
       throw new Error('추출할 클립이 없습니다.');
@@ -116,20 +139,33 @@ export function useFFmpeg() {
 
     // FFmpeg 재시도 함수
     const retryFFmpegInitialization = async () => {
-      console.log('FFmpeg 재시도 요청');
+      console.log('🔄 FFmpeg 재시도 요청');
       setFFmpegError(null);
       setIsFFmpegLoaded(false);
       
       try {
-        await ffmpegService.initialize((progress) => {
+        // 새로운 FFmpeg 서비스 인스턴스 생성
+        const newFFmpegService = new FFmpegService();
+        
+        await newFFmpegService.initialize((progress) => {
           setExportState(prev => ({ ...prev, progress }));
         });
+        
+        // 재시도 후 실제 테스트 수행
+        console.log('🧪 FFmpeg 재시도 후 테스트 시작...');
+        const testResult = await newFFmpegService.testFFmpeg();
+        if (!testResult) {
+          throw new Error('FFmpeg 재시도는 완료되었지만 실제 작동 테스트에 실패했습니다.');
+        }
+        
+        // 성공 시 기존 서비스 교체
+        Object.assign(ffmpegService, newFFmpegService);
         setIsFFmpegLoaded(true);
-        console.log('FFmpeg 재시도 성공!');
+        console.log('✅ FFmpeg 재시도 및 테스트 성공!');
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         setFFmpegError(`FFmpeg 재시도 실패: ${errorMessage}`);
-        console.error('FFmpeg 재시도 실패:', error);
+        console.error('❌ FFmpeg 재시도 실패:', error);
       }
     };
 

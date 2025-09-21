@@ -1,6 +1,9 @@
 // Video components
 export * from './video';
 
+// Subtitle components
+export * from './subtitle';
+
 // UI components  
 export * from './ui';
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import type { VideoPlayerState, VideoClip } from '../types';
 
 interface UseVideoPlayerProps {
@@ -39,7 +39,18 @@ export function useVideoPlayer({ clips, currentClipIndex, onClipIndexChange }: U
         }
       }
     }
-  }, [currentClipIndex, currentClip]);
+  }, [currentClipIndex, currentClip, playerState.isPlaying]);
+
+  const handlePlayPause = useCallback(() => {
+    if (videoRef.current) {
+      if (playerState.isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
+    }
+  }, [playerState.isPlaying]);
 
   // 볼륨 상태 동기화
   useEffect(() => {
@@ -49,12 +60,22 @@ export function useVideoPlayer({ clips, currentClipIndex, onClipIndexChange }: U
     }
   }, [playerState.volume, playerState.isMuted]);
 
-  // 키보드 이벤트 (스페이스바)
+  // 키보드 이벤트 (스페이스바) - 입력 필드에 포커스가 없을 때만 작동
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === 'Space') {
-        event.preventDefault();
-        if (currentClip && videoRef.current) {
+        // 입력 필드, textarea, contenteditable 요소에 포커스가 있는지 확인
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          (activeElement as HTMLElement).contentEditable === 'true' ||
+          activeElement.getAttribute('contenteditable') === 'true'
+        );
+
+        // 입력 필드에 포커스가 없을 때만 영상 재생/정지
+        if (!isInputFocused && currentClip && videoRef.current) {
+          event.preventDefault();
           handlePlayPause();
         }
       }
@@ -62,18 +83,7 @@ export function useVideoPlayer({ clips, currentClipIndex, onClipIndexChange }: U
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [currentClip, playerState.isPlaying]);
-
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (playerState.isPlaying) {
-        videoRef.current.pause();
-      } else {
-        videoRef.current.play();
-      }
-      setPlayerState(prev => ({ ...prev, isPlaying: !prev.isPlaying }));
-    }
-  };
+  }, [currentClip, handlePlayPause]);
 
   const handleTimeUpdate = () => {
     if (videoRef.current) {

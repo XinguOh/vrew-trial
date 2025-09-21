@@ -30,3 +30,20 @@ export interface ExportProgress {
   isExporting: boolean;
   progress: number;
 }
+
+export interface Subtitle {
+  id: string;
+  startTime: number;
+  endTime: number;
+  text: string;
+  style?: SubtitleStyle;
+}
+
+export interface SubtitleStyle {
+  fontSize?: number;
+  fontFamily?: string;
+  color?: string;
+  backgroundColor?: string;
+  position?: 'top' | 'center' | 'bottom';
+  alignment?: 'left' | 'center' | 'right';
+}

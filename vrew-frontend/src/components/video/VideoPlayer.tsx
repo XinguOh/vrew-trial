@@ -45,7 +45,7 @@ export function VideoPlayer({
 
   return (
     <div 
-      className="h-1/2 bg-black flex items-center justify-center relative cursor-pointer"
+      className="h-full w-full bg-black flex items-center justify-center relative cursor-pointer"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onMouseMove={onMouseMove}
@@ -55,7 +55,7 @@ export function VideoPlayer({
         <video
           ref={videoRef}
           src={currentClip.url}
-          className="max-w-full max-h-full pointer-events-none"
+          className="w-full h-full object-contain pointer-events-none"
           onTimeUpdate={onTimeUpdate}
           onLoadedMetadata={onLoadedMetadata}
           onEnded={onVideoEnded}

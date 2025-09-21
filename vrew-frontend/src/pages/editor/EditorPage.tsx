@@ -1,18 +1,19 @@
 import { useLocation } from "react-router-dom";
-import { VideoPlayer, ClipList, Timeline } from "../../components/video";
-import { ExportButton, PlayControls } from "../../components/ui";
-import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview } from "../../hooks";
+import { VideoPlayerSidebar, SceneEditor } from "../../components/layout";
+import { ExportButton } from "../../components/ui";
+import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview, useSubtitleManager } from "../../hooks";
 import type { EditorPageProps } from "../../types";
 import { VideoService } from "../../services";
 
-export function EditorPage({ isDarkMode, onToggleDarkMode }: EditorPageProps) {
+export function EditorPage({ isDarkMode }: EditorPageProps) {
   const location = useLocation();
   const initialVideoFile = location.state?.videoFile;
 
   // 커스텀 훅들
   const clipManager = useClipManager(initialVideoFile);
-  const { isFFmpegLoaded, ffmpegError, exportState, exportVideo, exportVideoFallback, retryFFmpegInitialization } = useFFmpeg();
+  const { isFFmpegLoaded, ffmpegError, exportState, exportVideo, retryFFmpegInitialization } = useFFmpeg();
   const hoverPreview = useHoverPreview();
+  const subtitleManager = useSubtitleManager();
   
   const videoPlayer = useVideoPlayer({
     clips: clipManager.videoClips,
@@ -49,31 +50,42 @@ export function EditorPage({ isDarkMode, onToggleDarkMode }: EditorPageProps) {
 
   const handleExportVideo = async () => {
     try {
-      let result;
-      
-      // FFmpeg가 로드된 경우 FFmpeg 사용, 아니면 fallback 사용
-      if (isFFmpegLoaded) {
-        console.log('FFmpeg를 사용하여 내보내기');
-        result = await exportVideo(clipManager.videoClips);
-      } else {
-        console.log('FFmpeg가 로드되지 않음. Fallback 방식 사용');
-        result = await exportVideoFallback(clipManager.videoClips);
+      // FFmpeg가 로드되지 않았으면 에러 표시
+      if (!isFFmpegLoaded || ffmpegError) {
+        // 사용자에게 선택권 제공
+        const useFallback = confirm(`❌ FFmpeg가 로드되지 않았습니다.\n\n상태: ${ffmpegError || '로딩 중'}\n\n💡 해결 방법:\n1. "FFmpeg 재시도" 버튼 클릭\n2. 페이지 새로고침\n3. 다른 브라우저 시도\n\n또는 브라우저 기본 기능으로 영상을 추출할 수 있습니다.\n\n브라우저 기본 기능을 사용하시겠습니까?`);
         
-        if (clipManager.videoClips.length > 1) {
-          alert('FFmpeg 대신 브라우저 기본 기능으로 클립 병합을 시도했습니다. WebM 형식으로 저장되며, 품질이 FFmpeg보다 낮을 수 있습니다. 최고 품질을 원하시면 페이지를 새로고침하고 FFmpeg 로딩을 기다려주세요.');
+        if (useFallback) {
+          // Fallback 사용
+          const { FallbackExportService } = await import('../../services');
+          const result = await FallbackExportService.exportWithBrowserAPI(clipManager.videoClips);
+          VideoService.downloadBlob(result.blob, result.filename);
+          alert('✅ 브라우저 기본 기능으로 영상 추출이 완료되었습니다!\n\n📝 참고: FFmpeg보다 품질이 낮을 수 있습니다.');
+          return;
+        } else {
+          throw new Error(`FFmpeg가 로드되지 않았습니다.\n\n상태: ${ffmpegError || '로딩 중'}\n\n💡 해결 방법:\n1. "FFmpeg 재시도" 버튼 클릭\n2. 페이지 새로고침\n3. 다른 브라우저 시도\n4. 인터넷 연결 확인`);
         }
       }
       
-      VideoService.downloadBlob(result.blob, result.filename);
-      alert('영상 추출이 완료되었습니다!');
-    } catch (error) {
-      console.error('영상 추출 중 오류:', error);
+      console.log('✅ FFmpeg를 사용하여 내보내기');
+      const result = await exportVideo(clipManager.videoClips);
       
-      // 추가적인 에러 처리 및 사용자 안내
-      if (error instanceof Error && error.message.includes('FFmpeg가 아직 로드되지 않았습니다')) {
-        alert('FFmpeg가 아직 로딩 중입니다. 잠시 후 다시 시도해주세요. 또는 페이지를 새로고침하여 다시 시도할 수 있습니다.');
+      VideoService.downloadBlob(result.blob, result.filename);
+      alert('🎉 고품질 영상 추출이 완료되었습니다! (FFmpeg 사용)');
+    } catch (error) {
+      console.error('❌ 영상 추출 중 오류:', error);
+      
+      // FFmpeg 관련 에러 처리
+      if (error instanceof Error) {
+        if (error.message.includes('FFmpeg가 로드되지 않았습니다')) {
+          alert(`❌ ${error.message}`);
+        } else if (error.message.includes('FFmpeg가 아직 로드되지 않았습니다')) {
+          alert('⏳ FFmpeg가 아직 로딩 중입니다.\n\n💡 해결 방법:\n1. 잠시 후 다시 시도\n2. "FFmpeg 재시도" 버튼 클릭\n3. 페이지 새로고침\n4. 다른 브라우저 시도');
+        } else {
+          alert(`❌ FFmpeg 영상 추출 중 오류가 발생했습니다:\n\n${error.message}\n\n💡 해결 방법:\n1. 다른 브라우저로 시도\n2. 인터넷 연결 확인\n3. 페이지 새로고침\n4. "FFmpeg 재시도" 버튼 클릭`);
+        }
       } else {
-        alert('영상 추출 중 오류가 발생했습니다: ' + error);
+        alert(`❌ 알 수 없는 오류가 발생했습니다:\n\n${error}\n\n💡 해결 방법:\n1. 페이지 새로고침\n2. 다른 브라우저 시도\n3. "FFmpeg 재시도" 버튼 클릭`);
       }
     }
   };
@@ -82,151 +94,181 @@ export function EditorPage({ isDarkMode, onToggleDarkMode }: EditorPageProps) {
     <div className={`min-h-screen transition-colors ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
     }`}>
-      {/* 메인바 (편집 모드) */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-3 border-b transition-colors ${
+      {/* VREW 스타일 상단 네비게이션 */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 border-b transition-colors ${
         isDarkMode 
           ? 'bg-gray-900 border-gray-700 text-white' 
           : 'bg-white border-gray-200 text-gray-700'
       }`}>
-        <div className="flex items-center">
-          <div className="mr-8 font-bold">Vrew 편집기</div>
-          <div className="flex space-x-4">
-            <button className={`hover:text-blue-500 transition-colors ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>파일</button>
-            <button className={`hover:text-blue-500 transition-colors ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>편집</button>
-            <button className={`hover:text-blue-500 transition-colors ${
-              isDarkMode ? 'text-gray-300' : 'text-gray-700'
-            }`}>자막</button>
+        {/* 상단 메뉴바 */}
+        <div className="flex items-center justify-between px-6 py-2">
+          <div className="flex items-center space-x-6">
+            {/* 사용자 프로필 */}
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                JO
+              </div>
+              <span className="text-sm font-medium">Junyoung Oh</span>
+            </div>
+            
+            {/* 메인 메뉴 */}
+            <div className="flex space-x-6">
+              <button className="text-sm hover:text-blue-500 transition-colors">파일</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">홈</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">편집</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">자막</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">서식</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">삽입</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">AI 목소리</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">템플릿</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">효과</button>
+              <button className="text-sm hover:text-blue-500 transition-colors">도움말</button>
+            </div>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <button className="text-sm hover:text-blue-500 transition-colors">의견 보내기</button>
+            <button className="text-sm hover:text-blue-500 transition-colors">업그레이드</button>
+            <ExportButton
+              isFFmpegLoaded={isFFmpegLoaded}
+              ffmpegError={ffmpegError}
+              exportState={exportState}
+              hasClips={clipManager.videoClips.length > 0}
+              isDarkMode={isDarkMode}
+              onExport={handleExportVideo}
+              onRetryFFmpeg={retryFFmpegInitialization}
+            />
           </div>
         </div>
         
-        {/* 영상 추출 버튼과 다크모드 토글 */}
-        <div className="flex items-center space-x-4">
-          <ExportButton
-            isFFmpegLoaded={isFFmpegLoaded}
-            ffmpegError={ffmpegError}
-            exportState={exportState}
-            hasClips={clipManager.videoClips.length > 0}
-            isDarkMode={isDarkMode}
-            onExport={handleExportVideo}
-            onRetryFFmpeg={retryFFmpegInitialization}
-          />
-          
-          {/* 다크모드 토글 */}
-          <div className="flex items-center space-x-3">
-            <svg className={`w-5 h-5 transition-colors ${isDarkMode ? 'text-gray-500' : 'text-yellow-500'}`} fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
-            </svg>
-            <button
-              onClick={onToggleDarkMode}
-              className={`relative w-14 h-7 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
-              }`}
-            >
-              <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform duration-300 shadow-md ${
-                isDarkMode ? 'translate-x-7' : 'translate-x-1'
-              }`}></div>
+        {/* 편집 도구바 */}
+        <div className={`flex items-center justify-between px-6 py-2 border-t ${
+          isDarkMode ? 'border-gray-700' : 'border-gray-200'
+        }`}>
+          <div className="flex items-center space-x-4">
+            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}>
+              새로 만들기
             </button>
-            <svg className={`w-5 h-5 transition-colors ${isDarkMode ? 'text-blue-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-            </svg>
+            <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+              isDarkMode 
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}>
+              프로젝트 열기
+            </button>
+            <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+              isDarkMode 
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}>
+              영상 추가하기
+            </button>
+            
+            <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+            
+            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}>
+              되돌리기
+            </button>
+            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}>
+              다시실행
+            </button>
+            
+            <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+            
+            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}>
+              잘라내기
+            </button>
+            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}>
+              복사하기
+            </button>
+            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+            }`}>
+              붙여넣기
+            </button>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <select className={`px-2 py-1 text-sm rounded border ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-600 text-white' 
+                : 'bg-white border-gray-300 text-gray-900'
+            }`}>
+              <option>Pretendard</option>
+            </select>
+            <select className={`px-2 py-1 text-sm rounded border ${
+              isDarkMode 
+                ? 'bg-gray-800 border-gray-600 text-white' 
+                : 'bg-white border-gray-300 text-gray-900'
+            }`}>
+              <option>100</option>
+            </select>
+            <button className={`w-8 h-8 rounded border ${
+              isDarkMode ? 'border-gray-600' : 'border-gray-300'
+            }`}></button>
+            <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+              isDarkMode 
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+            }`}>
+              [서식] 메뉴로 이동
+            </button>
           </div>
         </div>
       </nav>
 
       {/* 메인 편집 영역 */}
-      <div className="pt-16 h-screen flex">
-        {/* 왼쪽 사이드바 - 클립 리스트 */}
-        <ClipList
-          clips={clipManager.videoClips}
-          currentClipIndex={clipManager.currentClipIndex}
-          dragDropState={clipManager.dragDropState}
+      <div className="pt-24 h-screen flex">
+        {/* 왼쪽 사이드바 - 비디오 플레이어 */}
+        <VideoPlayerSidebar
+          videoRef={videoPlayer.videoRef}
+          currentClip={videoPlayer.currentClip}
+          playerState={videoPlayer.playerState}
+          hoverPreview={hoverPreview.hoverPreview}
           isDarkMode={isDarkMode}
-          onClipSelect={handleClipSelect}
-          onDeleteClip={clipManager.deleteClip}
-          onAddClip={handleAddClip}
-          onDragStart={clipManager.dragHandlers.handleDragStart}
-          onDragOver={clipManager.dragHandlers.handleDragOver}
-          onDragLeave={clipManager.dragHandlers.handleDragLeave}
-          onDrop={clipManager.dragHandlers.handleDrop}
+          onTimeUpdate={videoPlayer.handleTimeUpdate}
+          onLoadedMetadata={handleLoadedMetadata}
+          onVideoEnded={videoPlayer.handleVideoEnded}
+          onMouseEnter={hoverPreview.handleMouseEnter}
+          onMouseLeave={hoverPreview.handleMouseLeave}
+          onMouseMove={handleVideoMouseMove}
+          onTimeSeek={videoPlayer.handleTimeSeek}
+          onPlayPause={videoPlayer.handlePlayPause}
+          onVolumeChange={videoPlayer.handleVolumeChange}
+          onToggleMute={videoPlayer.handleToggleMute}
+          currentSubtitle={subtitleManager.getCurrentSubtitle(videoPlayer.playerState.currentTime) || null}
         />
 
-        {/* 중앙 - 비디오 플레이어와 자막 */}
-        <div className="flex-1 flex flex-col">
-          {/* 비디오 플레이어 */}
-          <VideoPlayer
-            videoRef={videoPlayer.videoRef}
-            currentClip={videoPlayer.currentClip}
-            playerState={videoPlayer.playerState}
-            hoverPreview={hoverPreview.hoverPreview}
-            isDarkMode={isDarkMode}
-            onTimeUpdate={videoPlayer.handleTimeUpdate}
-            onLoadedMetadata={handleLoadedMetadata}
-            onVideoEnded={videoPlayer.handleVideoEnded}
-            onMouseEnter={hoverPreview.handleMouseEnter}
-            onMouseLeave={hoverPreview.handleMouseLeave}
-            onMouseMove={handleVideoMouseMove}
-            onTimeSeek={videoPlayer.handleTimeSeek}
-          />
-
-          {/* 재생 컨트롤 */}
-          <PlayControls
-            playerState={videoPlayer.playerState}
-            currentClip={videoPlayer.currentClip}
-            isDarkMode={isDarkMode}
-            onPlayPause={videoPlayer.handlePlayPause}
-            onVolumeChange={videoPlayer.handleVolumeChange}
-            onToggleMute={videoPlayer.handleToggleMute}
-          />
-
-          {/* 자막 편집 영역 */}
-          <div className="flex-1 p-4 overflow-y-auto">
-            <div className="grid grid-cols-5 gap-4 mb-6">
-              {[1, 2, 3, 4, 5].map((index) => (
-                <div key={index} className={`p-4 border rounded-lg ${
-                  index === 4 
-                    ? (isDarkMode ? 'border-blue-500 bg-gray-700' : 'border-blue-500 bg-blue-50')
-                    : (isDarkMode ? 'border-gray-600 bg-gray-800' : 'border-gray-200 bg-white')
-                }`}>
-                  <div className="flex items-center space-x-2 mb-2">
-                    <span className="text-sm font-medium">{index}</span>
-                    <span className="text-xs text-gray-500">영상편집</span>
-                  </div>
-                  <div className="grid grid-cols-5 gap-1 mb-2">
-                    {Array.from({length: 5}).map((_, i) => (
-                      <div key={i} className="text-xs text-gray-400 border rounded px-1">
-                        ?
-                      </div>
-                    ))}
-                  </div>
-                  <div className="w-8 h-8 bg-gray-400 rounded ml-auto">
-                    🎬
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    00:{index < 10 ? '0' : ''}{index * 5} - {Math.floor(videoPlayer.playerState.duration / 5)}초
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* 타임라인 */}
-            {clipManager.videoClips.length > 0 && (
-              <Timeline
-                clips={clipManager.videoClips}
-                onClipsReorder={clipManager.reorderClips}
-                currentTime={videoPlayer.playerState.currentTime}
-                onTimeSeek={videoPlayer.handleTimeSeek}
-                isDarkMode={isDarkMode}
-                currentClipIndex={clipManager.currentClipIndex}
-                onClipSelect={handleClipSelect}
-              />
-            )}
-
-          </div>
-        </div>
+        {/* 오른쪽 메인 영역 - 씬 편집기 */}
+        <SceneEditor
+          clips={clipManager.videoClips}
+          currentClipIndex={clipManager.currentClipIndex}
+          isDarkMode={isDarkMode}
+          onClipSelect={handleClipSelect}
+          onAddClip={handleAddClip}
+        />
       </div>
     </div>
   );
