@@ -1,6 +1,5 @@
 import type { VideoClip, DragDropState } from '../../types';
 import { VideoService } from '../../services';
-import { AddClipButton } from '../ui';
 
 interface ClipListProps {
   clips: VideoClip[];
@@ -102,10 +101,6 @@ export function ClipList({
           ))}
         </div>
 
-        <AddClipButton
-          isDarkMode={isDarkMode}
-          onFileSelect={onAddClip}
-        />
       </div>
     </div>
   );
