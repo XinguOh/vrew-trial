@@ -1,4 +1,5 @@
-import { VideoPlayer, PlayControls } from '../video';
+import { VideoPlayer } from '../video';
+import { PlayControls } from '../ui';
 import { SubtitleDisplay } from '../subtitle';
 import type { VideoClip, VideoPlayerState, HoverPreview } from '../../types';
 
@@ -40,8 +41,8 @@ export function VideoPlayerSidebar({
   currentSubtitle
 }: VideoPlayerSidebarProps) {
   return (
-    <div className={`w-80 border-r h-full flex flex-col ${
-      isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-gray-50 border-gray-200'
+    <div className={`w-full h-full flex flex-col ${
+      isDarkMode ? 'bg-gray-800' : 'bg-gray-50'
     }`}>
       {/* 비디오 플레이어 영역 */}
       <div className="relative flex-1 bg-black">
@@ -120,33 +121,6 @@ export function VideoPlayerSidebar({
         </div>
       </div>
 
-      {/* 클립 정보 */}
-      <div className={`p-4 border-t ${
-        isDarkMode ? 'border-gray-600' : 'border-gray-200'
-      }`}>
-        <div className="text-sm font-medium mb-2">클립1</div>
-        <div className={`text-xs ${
-          isDarkMode ? 'text-gray-400' : 'text-gray-600'
-        }`}>
-          현재 재생 중인 클립
-        </div>
-      </div>
-
-      {/* 업데이트 알림 */}
-      <div className={`p-3 border-t ${
-        isDarkMode ? 'border-gray-600 bg-gray-700' : 'border-gray-200 bg-blue-50'
-      }`}>
-        <div className={`text-xs ${
-          isDarkMode ? 'text-gray-300' : 'text-blue-800'
-        }`}>
-          브루 3.2.0 업데이트 사항을 안내드립니다.
-        </div>
-        <button className={`text-xs mt-1 ${
-          isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
-        }`}>
-          Vrew의 최신 소식을 확인해 보세요!
-        </button>
-      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import type { VideoClip } from '../../types';
 
 interface SceneEditorProps {
@@ -17,7 +17,8 @@ export function SceneEditor({
   onAddClip
 }: SceneEditorProps) {
   const [selectedScenes, setSelectedScenes] = useState<number[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'details'>('overview');
+  const [activeTab, setActiveTab] = useState<'video' | 'order' | 'subtitle'>('video');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSceneSelect = (index: number) => {
     setSelectedScenes(prev => 
@@ -41,6 +42,151 @@ export function SceneEditor({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleAddScene = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type.startsWith('video/')) {
+      onAddClip(file);
+    } else {
+      alert('비디오 파일을 선택해주세요.');
+    }
+    // 파일 입력 초기화
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  // 탭별 렌더링 함수들
+  const renderVideoTab = () => (
+    <div className="flex-1 overflow-y-auto p-4">
+      <div className="space-y-4">
+        {/* 씬 추가 버튼 */}
+        <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg">
+          <button 
+            onClick={handleAddScene}
+            className={`w-full py-3 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' 
+                : 'border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600'
+            }`}
+          >
+            + 씬 추가
+          </button>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/*"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+
+        {/* 현재 씬 정보 */}
+        <div className={`p-4 rounded-lg border ${
+          isDarkMode 
+            ? 'bg-gray-800 border-gray-600' 
+            : 'bg-white border-gray-200'
+        }`}>
+          <div className="flex items-center space-x-3">
+            <div className="w-16 h-12 bg-gray-300 rounded flex items-center justify-center text-xs text-gray-600">
+              썸네일
+            </div>
+            <div className="flex-1">
+              <div className="font-medium">#1 제목 없는 씬</div>
+              <div className="text-sm text-gray-500">00:00 + 6분 49초</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderOrderTab = () => (
+    <div className="flex-1 overflow-y-auto p-4">
+      <div className="space-y-2">
+        {clips.map((clip, index) => (
+          <div
+            key={clip.id}
+            className={`p-3 rounded-lg border transition-colors ${
+              currentClipIndex === index
+                ? isDarkMode
+                  ? 'border-blue-500 bg-blue-900/20'
+                  : 'border-blue-500 bg-blue-50'
+                : isDarkMode
+                ? 'border-gray-600 bg-gray-800 hover:bg-gray-700'
+                : 'border-gray-200 bg-white hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-medium">{index + 1}</span>
+                <div className="flex flex-col space-y-1">
+                  <button className="text-xs text-blue-500 hover:text-blue-700">↑</button>
+                  <button className="text-xs text-blue-500 hover:text-blue-700">↓</button>
+                </div>
+              </div>
+              
+              <div className="flex-1">
+                <div className="text-sm font-medium">영상편집</div>
+                <div className="text-xs text-gray-500">
+                  {formatTime(index * 5)} + 5.00초
+                </div>
+              </div>
+              
+              <div className="w-12 h-8 bg-gray-300 rounded flex items-center justify-center text-xs text-gray-600">
+                썸네일
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderSubtitleTab = () => (
+    <div className="flex-1 overflow-y-auto p-4">
+      <div className="space-y-4">
+        {/* 자막 추가 버튼 */}
+        <button className={`w-full py-2 px-4 rounded border-2 border-dashed transition-colors ${
+          isDarkMode 
+            ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' 
+            : 'border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600'
+        }`}>
+          + 자막 추가
+        </button>
+
+        {/* 자막 리스트 */}
+        <div className="space-y-2">
+          {[1, 2, 3].map((index) => (
+            <div
+              key={index}
+              className={`p-3 rounded-lg border ${
+                isDarkMode
+                  ? 'border-gray-600 bg-gray-800 hover:bg-gray-700'
+                  : 'border-gray-200 bg-white hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="text-sm font-medium">{index}</div>
+                <div className="flex-1">
+                  <div className="text-sm">자막 텍스트 {index}</div>
+                  <div className="text-xs text-gray-500">00:0{index} - 00:0{index + 1}</div>
+                </div>
+                <button className="text-xs text-blue-500 hover:text-blue-700">
+                  편집
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* 헤더 */}
@@ -51,9 +197,9 @@ export function SceneEditor({
           <div className="flex items-center space-x-4">
             <div className="flex space-x-1">
               <button
-                onClick={() => setActiveTab('overview')}
+                onClick={() => setActiveTab('video')}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
-                  activeTab === 'overview'
+                  activeTab === 'video'
                     ? isDarkMode
                       ? 'bg-blue-600 text-white'
                       : 'bg-blue-500 text-white'
@@ -62,12 +208,12 @@ export function SceneEditor({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                개요
+                1. 영상
               </button>
               <button
-                onClick={() => setActiveTab('details')}
+                onClick={() => setActiveTab('order')}
                 className={`px-3 py-1 text-sm rounded transition-colors ${
-                  activeTab === 'details'
+                  activeTab === 'order'
                     ? isDarkMode
                       ? 'bg-blue-600 text-white'
                       : 'bg-blue-500 text-white'
@@ -76,7 +222,21 @@ export function SceneEditor({
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
-                상세
+                2. 영상 순서
+              </button>
+              <button
+                onClick={() => setActiveTab('subtitle')}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  activeTab === 'subtitle'
+                    ? isDarkMode
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-blue-500 text-white'
+                    : isDarkMode
+                    ? 'text-gray-400 hover:text-white'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                3. 자막
               </button>
             </div>
           </div>
@@ -127,93 +287,60 @@ export function SceneEditor({
         </div>
       </div>
 
-      {/* 씬 추가 버튼 */}
-      <div className="p-4">
-        <button className={`w-full py-2 text-sm rounded border-2 border-dashed transition-colors ${
-          isDarkMode 
-            ? 'border-gray-600 text-gray-400 hover:border-blue-500 hover:text-blue-400' 
-            : 'border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-600'
-        }`}>
-          씬 추가
-        </button>
-      </div>
-
-      {/* 세그먼트 리스트 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="space-y-2">
-          {clips.map((clip, index) => (
-            <div
-              key={clip.id}
-              className={`p-3 rounded-lg border transition-colors ${
-                currentClipIndex === index
-                  ? isDarkMode
-                    ? 'border-blue-500 bg-blue-900/20'
-                    : 'border-blue-500 bg-blue-50'
-                  : isDarkMode
-                  ? 'border-gray-600 bg-gray-800 hover:bg-gray-700'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedScenes.includes(index)}
-                    onChange={() => handleSceneSelect(index)}
-                    className="rounded"
-                  />
-                  <span className="text-sm font-medium">{index + 1}</span>
-                </div>
-                
-                <div className="flex-1">
-                  <div className="text-sm font-medium">영상편집</div>
-                  <div className="flex items-center space-x-1 mt-1">
-                    {Array.from({length: 5}).map((_, i) => (
-                      <div key={i} className={`w-4 h-4 border rounded text-xs flex items-center justify-center ${
-                        isDarkMode 
-                          ? 'border-gray-600 text-gray-400' 
-                          : 'border-gray-300 text-gray-500'
-                      }`}>
-                        ?
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 bg-gray-400 rounded flex items-center justify-center text-xs">
-                    📄
-                  </div>
-                  <div className="w-12 h-8 bg-gray-300 rounded flex items-center justify-center text-xs text-gray-600">
-                    썸네일
-                  </div>
-                </div>
-                
-                <div className="text-right">
-                  <div className="text-sm">
-                    {formatTime(index * 5)} + 5.00초
-                  </div>
-                  <button className="text-xs text-blue-500 hover:text-blue-700">
-                    🔗
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* 탭 내용 */}
+      {activeTab === 'video' && renderVideoTab()}
+      {activeTab === 'order' && renderOrderTab()}
+      {activeTab === 'subtitle' && renderSubtitleTab()}
 
       {/* 하단 컨트롤 */}
       <div className={`p-4 border-t ${
         isDarkMode ? 'border-gray-600' : 'border-gray-200'
       }`}>
-        <button className={`w-full py-2 text-sm rounded transition-colors ${
-          isDarkMode 
-            ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-        }`}>
-          재생 위치 따라가기
-        </button>
+        {activeTab === 'video' && (
+          <button className={`w-full py-2 text-sm rounded transition-colors ${
+            isDarkMode 
+              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}>
+            재생 위치 따라가기
+          </button>
+        )}
+        {activeTab === 'order' && (
+          <div className="flex space-x-2">
+            <button className={`flex-1 py-2 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}>
+              순서 저장
+            </button>
+            <button className={`flex-1 py-2 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+              초기화
+            </button>
+          </div>
+        )}
+        {activeTab === 'subtitle' && (
+          <div className="flex space-x-2">
+            <button className={`flex-1 py-2 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-blue-500 text-white hover:bg-blue-600'
+            }`}>
+              자막 저장
+            </button>
+            <button className={`flex-1 py-2 text-sm rounded transition-colors ${
+              isDarkMode 
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}>
+              미리보기
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
