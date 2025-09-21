@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
-import { VideoPlayerSidebar, SceneEditor } from "../../components/layout";
+import React, { useState, useRef, useCallback } from "react";
+import { VideoPlayerSidebar, VideoOrderPanel, SubtitleEditor } from "../../components/layout";
 import { ExportButton } from "../../components/ui";
 import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview, useSubtitleManager } from "../../hooks";
 import type { EditorPageProps } from "../../types";
@@ -8,6 +9,22 @@ import { VideoService } from "../../services";
 export function EditorPage({ isDarkMode }: EditorPageProps) {
   const location = useLocation();
   const initialVideoFile = location.state?.videoFile;
+
+  // 리사이즈 상태
+  const [videoPanelWidth, setVideoPanelWidth] = useState(20); // 20% 기본값
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<HTMLDivElement>(null);
+
+  // 자막 상태
+  const [subtitles, setSubtitles] = useState<any[]>([]);
+
+  // 현재 재생 중인 자막 찾기
+  const getCurrentSubtitle = () => {
+    const currentTime = videoPlayer.playerState.currentTime;
+    return subtitles.find(sub => 
+      currentTime >= sub.startTime && currentTime <= sub.endTime
+    ) || null;
+  };
 
   // 커스텀 훅들
   const clipManager = useClipManager(initialVideoFile);
@@ -90,6 +107,49 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
     }
   };
 
+  // 리사이즈 핸들러들
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeRef.current) return;
+    
+    const containerWidth = resizeRef.current.parentElement?.offsetWidth || 0;
+    const newWidth = (e.clientX / containerWidth) * 100;
+    
+    // 최소 15%, 최대 60%로 제한
+    const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
+    setVideoPanelWidth(clampedWidth);
+  }, [isResizing]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // 마우스 이벤트 리스너 등록
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
   return (
     <div className={`min-h-screen transition-colors ${
       isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
@@ -160,54 +220,9 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
             }`}>
               프로젝트 열기
             </button>
-            <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
-              isDarkMode 
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}>
-              영상 추가하기
-            </button>
             
             <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
             
-            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              isDarkMode 
-                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}>
-              되돌리기
-            </button>
-            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              isDarkMode 
-                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}>
-              다시실행
-            </button>
-            
-            <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-            
-            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              isDarkMode 
-                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}>
-              잘라내기
-            </button>
-            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              isDarkMode 
-                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}>
-              복사하기
-            </button>
-            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              isDarkMode 
-                ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-                : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-            }`}>
-              붙여넣기
-            </button>
           </div>
           
           <div className="flex items-center space-x-4">
@@ -239,36 +254,53 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
         </div>
       </nav>
 
-      {/* 메인 편집 영역 */}
+      {/* 메인 편집 영역 - 1:1:3 비율 */}
       <div className="pt-24 h-screen flex">
-        {/* 왼쪽 사이드바 - 비디오 플레이어 */}
-        <VideoPlayerSidebar
-          videoRef={videoPlayer.videoRef}
-          currentClip={videoPlayer.currentClip}
-          playerState={videoPlayer.playerState}
-          hoverPreview={hoverPreview.hoverPreview}
-          isDarkMode={isDarkMode}
-          onTimeUpdate={videoPlayer.handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onVideoEnded={videoPlayer.handleVideoEnded}
-          onMouseEnter={hoverPreview.handleMouseEnter}
-          onMouseLeave={hoverPreview.handleMouseLeave}
-          onMouseMove={handleVideoMouseMove}
-          onTimeSeek={videoPlayer.handleTimeSeek}
-          onPlayPause={videoPlayer.handlePlayPause}
-          onVolumeChange={videoPlayer.handleVolumeChange}
-          onToggleMute={videoPlayer.handleToggleMute}
-          currentSubtitle={subtitleManager.getCurrentSubtitle(videoPlayer.playerState.currentTime) || null}
-        />
+        {/* 왼쪽 섹션 (1) - 영상 플레이어 */}
+        <div className="w-1/5 border-r">
+          <VideoPlayerSidebar
+            videoRef={videoPlayer.videoRef}
+            currentClip={videoPlayer.currentClip}
+            playerState={videoPlayer.playerState}
+            hoverPreview={hoverPreview.hoverPreview}
+            isDarkMode={isDarkMode}
+            onTimeUpdate={videoPlayer.handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onVideoEnded={videoPlayer.handleVideoEnded}
+            onMouseEnter={hoverPreview.handleMouseEnter}
+            onMouseLeave={hoverPreview.handleMouseLeave}
+            onMouseMove={handleVideoMouseMove}
+            onTimeSeek={videoPlayer.handleTimeSeek}
+            onPlayPause={videoPlayer.handlePlayPause}
+            onVolumeChange={videoPlayer.handleVolumeChange}
+            onToggleMute={videoPlayer.handleToggleMute}
+            currentSubtitle={getCurrentSubtitle()}
+          />
+        </div>
 
-        {/* 오른쪽 메인 영역 - 씬 편집기 */}
-        <SceneEditor
-          clips={clipManager.videoClips}
-          currentClipIndex={clipManager.currentClipIndex}
-          isDarkMode={isDarkMode}
-          onClipSelect={handleClipSelect}
-          onAddClip={handleAddClip}
-        />
+        {/* 가운데 섹션 (1) - 영상 순서 */}
+        <div className="w-1/5 border-r">
+          <VideoOrderPanel
+            clips={clipManager.videoClips}
+            currentClipIndex={clipManager.currentClipIndex}
+            isDarkMode={isDarkMode}
+            onClipSelect={handleClipSelect}
+            onAddClip={handleAddClip}
+            onReorderClips={clipManager.reorderClips}
+          />
+        </div>
+
+        {/* 오른쪽 섹션 (3) - 자막 편집 */}
+        <div className="w-3/5">
+          <SubtitleEditor
+            clips={clipManager.videoClips}
+            currentClipIndex={clipManager.currentClipIndex}
+            isDarkMode={isDarkMode}
+            subtitleManager={subtitleManager}
+            currentTime={videoPlayer.playerState.currentTime}
+            onSubtitleChange={setSubtitles}
+          />
+        </div>
       </div>
     </div>
   );
