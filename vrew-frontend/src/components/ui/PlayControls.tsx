@@ -26,11 +26,11 @@ export function PlayControls({
       isDarkMode ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
     }`}>
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-6 flex-1">
           <button
             onClick={onPlayPause}
             disabled={!currentClip}
-            className={`p-2 rounded ${
+            className={`p-2 rounded flex-shrink-0 ${
               !currentClip 
                 ? 'bg-gray-300 cursor-not-allowed' 
                 : (isDarkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200')
@@ -39,15 +39,19 @@ export function PlayControls({
             {isPlaying ? '⏸️' : '▶️'}
           </button>
           
-          <span className="text-sm">
-            {VideoService.formatTime(currentTime)} / {VideoService.formatTime(duration)}
-          </span>
-          
-          {currentClip && (
-            <span className="text-sm text-gray-500">
-              현재: {currentClip.name}
+          <div className="flex flex-col space-y-1 flex-1 min-w-0">
+            <span className={`text-base font-medium whitespace-nowrap ${
+              isDarkMode ? 'text-white' : 'text-gray-900'
+            }`}>
+              {VideoService.formatTime(currentTime)} / {VideoService.formatTime(duration)}
             </span>
-          )}
+            
+            {currentClip && (
+              <span className="text-sm text-gray-500 truncate">
+                현재: {currentClip.name}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* 볼륨 컨트롤 */}
