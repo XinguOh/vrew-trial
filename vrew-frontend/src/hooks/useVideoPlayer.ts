@@ -39,7 +39,7 @@ export function useVideoPlayer({ clips, currentClipIndex, onClipIndexChange }: U
         }
       }
     }
-  }, [currentClipIndex, currentClip, playerState.isPlaying]);
+  }, [currentClipIndex, currentClip]);
 
   const handlePlayPause = useCallback(() => {
     if (videoRef.current) {

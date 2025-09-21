@@ -39,44 +39,6 @@ export function SubBar({ isDarkMode }: SubBarProps) {
           <span>재생</span>
         </div>
 
-        {/* 구분선 */}
-        <div className="w-px h-6 bg-gray-300 mx-2"></div>
-
-        {/* 되돌리기 (비활성화) */}
-        <div className="flex items-center space-x-1 bg-gray-100 text-gray-400 px-3 py-1.5 rounded text-sm cursor-not-allowed">
-          <div className="w-4 h-4 bg-current rounded-sm"></div>
-          <span>되돌리기</span>
-        </div>
-
-        {/* 다시실행 (비활성화) */}
-        <div className="flex items-center space-x-1 bg-gray-100 text-gray-400 px-3 py-1.5 rounded text-sm cursor-not-allowed">
-          <div className="w-4 h-4 bg-current rounded-sm"></div>
-          <span>다시실행</span>
-        </div>
-
-        {/* 구분선 */}
-        <div className="w-px h-6 bg-gray-300 mx-2"></div>
-
-        {/* 잘라내기 (비활성화) */}
-        <div className="flex items-center space-x-1 bg-gray-100 text-gray-400 px-3 py-1.5 rounded text-sm cursor-not-allowed">
-          <div className="w-4 h-4 bg-current rounded-sm"></div>
-          <span>잘라내기</span>
-        </div>
-
-        {/* 복사하기 (비활성화) */}
-        <div className="flex items-center space-x-1 bg-gray-100 text-gray-400 px-3 py-1.5 rounded text-sm cursor-not-allowed">
-          <div className="w-4 h-4 bg-current rounded-sm"></div>
-          <span>복사하기</span>
-        </div>
-
-        {/* 붙여넣기 (비활성화) */}
-        <div className="flex items-center space-x-1 bg-gray-100 text-gray-400 px-3 py-1.5 rounded text-sm cursor-not-allowed">
-          <div className="w-4 h-4 bg-current rounded-sm"></div>
-          <span>붙여넣기</span>
-        </div>
-
-        {/* 구분선 */}
-        <div className="w-px h-6 bg-gray-300 mx-2"></div>
 
         {/* 클립 합치기 (비활성화) */}
         <div className="flex items-center space-x-1 bg-gray-100 text-gray-400 px-3 py-1.5 rounded text-sm cursor-not-allowed">
