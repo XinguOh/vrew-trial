@@ -36,7 +36,7 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   };
 
   const handleVideoMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    hoverPreview.handleMouseMove(event, videoPlayer.playerState.duration);
+    // hoverPreview.handleMouseMove(event, videoPlayer.playerState.duration);
   };
 
   const handleLoadedMetadata = () => {
@@ -205,19 +205,19 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
             videoRef={videoPlayer.videoRef}
             currentClip={videoPlayer.currentClip}
             playerState={videoPlayer.playerState}
-            hoverPreview={hoverPreview.hoverPreview}
+            hoverPreview={null}
             isDarkMode={isDarkMode}
             onTimeUpdate={videoPlayer.handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onVideoEnded={videoPlayer.handleVideoEnded}
-            onMouseEnter={hoverPreview.handleMouseEnter}
-            onMouseLeave={hoverPreview.handleMouseLeave}
+            onMouseEnter={() => {}}
+            onMouseLeave={() => {}}
             onMouseMove={handleVideoMouseMove}
             onTimeSeek={videoPlayer.handleTimeSeek}
             onPlayPause={videoPlayer.handlePlayPause}
             onVolumeChange={videoPlayer.handleVolumeChange}
             onToggleMute={videoPlayer.handleToggleMute}
-            currentSubtitle={getCurrentSubtitle()}
+            currentSubtitle={null}
           />
         </div>
 
