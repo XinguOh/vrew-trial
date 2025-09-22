@@ -161,27 +161,15 @@ export function SceneEditor({
 
         {/* 자막 리스트 */}
         <div className="space-y-2">
-          {[1, 2, 3].map((index) => (
-            <div
-              key={index}
-              className={`p-3 rounded-lg border ${
-                isDarkMode
-                  ? 'border-gray-600 bg-gray-800 hover:bg-gray-700'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="text-sm font-medium">{index}</div>
-                <div className="flex-1">
-                  <div className="text-sm">자막 텍스트 {index}</div>
-                  <div className="text-xs text-gray-500">00:0{index} - 00:0{index + 1}</div>
-                </div>
-                <button className="text-xs text-blue-500 hover:text-blue-700">
-                  편집
-                </button>
-              </div>
-            </div>
-          ))}
+          <div className={`p-8 text-center rounded-lg border-2 border-dashed ${
+            isDarkMode 
+              ? 'border-gray-600 text-gray-400' 
+              : 'border-gray-300 text-gray-500'
+          }`}>
+            <div className="text-4xl mb-2">📝</div>
+            <p className="text-sm">아직 자막이 없습니다</p>
+            <p className="text-xs mt-1">위의 버튼을 클릭하여 자막을 추가해보세요</p>
+          </div>
         </div>
       </div>
     </div>

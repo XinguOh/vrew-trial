@@ -104,7 +104,7 @@ export function VolumeControl({
         </span>
       )}
 
-      <style jsx>{`
+      <style>{`
         input[type="range"]::-webkit-slider-thumb {
           appearance: none;
           width: 16px;

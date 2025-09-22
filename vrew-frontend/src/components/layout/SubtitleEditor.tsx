@@ -34,11 +34,7 @@ export function SubtitleEditor({
   currentTime = 0,
   onSubtitleChange,
 }: SubtitleEditorProps) {
-  const [subtitles, setSubtitles] = useState<Subtitle[]>([
-    { id: '1', text: '안녕하세요, 첫 번째 자막입니다.', startTime: 0, endTime: 3 },
-    { id: '2', text: '두 번째 자막입니다.', startTime: 3, endTime: 6 },
-    { id: '3', text: '세 번째 자막입니다.', startTime: 6, endTime: 9 },
-  ]);
+  const [subtitles, setSubtitles] = useState<Subtitle[]>([  ]);
 
   // 자막 변경 시 상위 컴포넌트에 알림
   const updateSubtitles = (newSubtitles: Subtitle[]) => {

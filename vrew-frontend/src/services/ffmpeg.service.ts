@@ -23,26 +23,19 @@ export class FFmpegService {
     try {
       console.log('FFmpeg 초기화 시작...');
       
-      // 로컬 파일 우선, 그 다음 CDN 시도
+      // 완전히 새로운 FFmpeg 인스턴스 생성
+      this.ffmpeg = new FFmpeg();
+      
+      // SharedArrayBuffer 지원 여부에 따라 우선순위 조정
+      const hasSharedArrayBuffer = typeof SharedArrayBuffer !== 'undefined';
+      console.log(`🔍 SharedArrayBuffer 지원: ${hasSharedArrayBuffer}`);
+      
+      // 가장 안정적인 싱글스레드 버전만 시도
       const cdnUrls = [
-        // 로컬 파일 (CORS 문제 없음)
-        '/ffmpeg',
-        
-        // 안정적인 CDN들 (멀티스레드 우선 - 더 안정적)
-        'https://unpkg.com/@ffmpeg/core-mt@0.12.4/dist/esm',
-        'https://unpkg.com/@ffmpeg/core-mt@0.12.6/dist/esm',
-        'https://unpkg.com/@ffmpeg/core-mt@0.12.2/dist/esm',
-        
-        // 싱글스레드 버전들
         'https://unpkg.com/@ffmpeg/core@0.12.4/dist/esm',
         'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm',
-        'https://unpkg.com/@ffmpeg/core@0.12.2/dist/esm',
-        
-        // 대체 CDN들
-        'https://esm.sh/@ffmpeg/core-mt@0.12.4/dist/esm',
-        'https://esm.sh/@ffmpeg/core-mt@0.12.6/dist/esm',
         'https://esm.sh/@ffmpeg/core@0.12.4/dist/esm',
-        'https://esm.sh/@ffmpeg/core@0.12.6/dist/esm'
+        'https://esm.sh/@ffmpeg/core@0.12.6/dist/esm',
       ];
 
       let loadSuccess = false;
@@ -52,6 +45,7 @@ export class FFmpegService {
         try {
           console.log(`FFmpeg 로딩 시도: ${baseURL}`);
           
+          // 이벤트 리스너 설정
           this.ffmpeg.on('log', ({ message }) => {
             console.log('FFmpeg Log:', message);
           });
@@ -60,77 +54,51 @@ export class FFmpegService {
             this.onProgress?.(Math.round(progress * 100));
           });
           
-          // 타임아웃과 함께 URL 유효성 체크 (더 긴 타임아웃)
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('타임아웃: FFmpeg 로딩이 너무 오래 걸립니다 (60초)')), 60000)
+          // 간단한 로드 방식
+          const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+          const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+          
+          console.log(`✅ Core JS 다운로드 완료`);
+          console.log(`✅ WASM 다운로드 완료`);
+          
+          // 싱글스레드 모드로만 로드 (안정성 우선)
+          console.log(`🚀 FFmpeg 싱글스레드 모드로 로드 시작...`);
+          
+          const loadOptions = {
+            coreURL,
+            wasmURL,
+            // workerURL 제외하여 싱글스레드 모드로 강제 실행
+          };
+          
+          console.log('📋 로드 옵션:', JSON.stringify(loadOptions, null, 2));
+          
+          // 로드 타임아웃 설정 (10초)
+          const loadTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('FFmpeg 로드 타임아웃 (10초)')), 10000)
           );
           
-          const loadPromise = (async () => {
-            console.log(`📦 FFmpeg 파일 다운로드 시작: ${baseURL}`);
-            
-            // 로컬 파일인지 CDN인지 확인
-            const isLocal = baseURL.startsWith('/');
-            
-            try {
-              const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-              console.log(`✅ Core JS 다운로드 완료: ${coreURL.substring(0, 50)}...`);
-              
-              const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-              console.log(`✅ WASM 다운로드 완료: ${wasmURL.substring(0, 50)}...`);
-              
-              // Worker 파일은 멀티스레드 버전에서만 필요
-              let workerURL: string | undefined;
-              if (baseURL.includes('core-mt') || isLocal) {
-                try {
-                  workerURL = await toBlobURL(`${baseURL}/ffmpeg-core.worker.js`, 'text/javascript');
-                  console.log(`✅ Worker JS 다운로드 완료: ${workerURL.substring(0, 50)}...`);
-                } catch (workerError) {
-                  console.warn(`⚠️ Worker JS 다운로드 실패, 싱글스레드 모드로 진행: ${workerError}`);
-                  workerURL = undefined;
-                }
-              }
-              
-              console.log(`🚀 FFmpeg 로드 시작...`);
-              await this.ffmpeg.load({
-                coreURL,
-                wasmURL,
-                workerURL,
-              });
-              console.log(`✅ FFmpeg 로드 완료!`);
-            } catch (fileError) {
-              console.error(`❌ 파일 다운로드 실패 (${baseURL}):`, fileError);
-              throw fileError;
-            }
-          })();
+          const loadPromise = this.ffmpeg.load(loadOptions);
           
-          await Promise.race([loadPromise, timeoutPromise]);
+          await Promise.race([loadPromise, loadTimeout]);
           
-          // 로드 후 실제 사용 가능한지 테스트
+          // 로드 완료 후 상태 확인
+          console.log('🔍 FFmpeg 로드 후 상태 확인:');
+          console.log('- ffmpeg.loaded:', this.ffmpeg.loaded);
+          console.log('- ffmpeg.canExecute:', this.ffmpeg.canExecute);
+          
           if (this.ffmpeg.loaded) {
             loadSuccess = true;
-            console.log(`✅ FFmpeg 로드 및 검증 완료: ${baseURL}`);
+            console.log(`✅ FFmpeg 로드 완료: ${baseURL}`);
             break;
           } else {
-            throw new Error('FFmpeg 로드는 완료되었지만 사용할 수 없습니다.');
+            throw new Error('FFmpeg 로드는 완료되었지만 loaded 상태가 false입니다.');
           }
         } catch (error) {
           console.warn(`❌ FFmpeg 로드 실패 (${baseURL}):`, error);
           lastError = error as Error;
           
-          // 오류 타입별 상세 로그
-          if (error instanceof Error) {
-            if (error.message.includes('fetch') || error.message.includes('network')) {
-              console.warn('🌐 네트워크 문제로 인한 FFmpeg 로드 실패');
-            } else if (error.message.includes('wasm') || error.message.includes('WebAssembly')) {
-              console.warn('🔧 WebAssembly 지원 문제로 인한 FFmpeg 로드 실패');
-            } else if (error.message.includes('타임아웃')) {
-              console.warn('⏰ 타임아웃으로 인한 FFmpeg 로드 실패');
-            } else {
-              console.warn('❓ 알 수 없는 이유로 FFmpeg 로드 실패:', error.message);
-            }
-          }
-          
-          // Reset ffmpeg instance if it failed to load, to try with a fresh one
+          // FFmpeg 인스턴스 재생성
+          console.log('🔄 FFmpeg 인스턴스 재생성...');
           this.ffmpeg = new FFmpeg();
           continue;
         }
@@ -164,14 +132,36 @@ export class FFmpegService {
   // FFmpeg가 실제로 작동하는지 테스트하는 메서드
   async testFFmpeg(): Promise<boolean> {
     try {
+      console.log('🧪 FFmpeg 테스트 시작...');
+      console.log('- this.isLoaded:', this.isLoaded);
+      console.log('- this.ffmpeg.loaded:', this.ffmpeg.loaded);
+      console.log('- this.ffmpeg.canExecute:', this.ffmpeg.canExecute);
+      
       if (!this.isLoaded || !this.ffmpeg.loaded) {
         console.log('❌ FFmpeg 테스트 실패: 로드되지 않음');
         return false;
       }
       
-      // 더 간단한 테스트: 파일 시스템 접근 테스트
+      // 1. 간단한 파일 시스템 접근 테스트
+      console.log('📝 파일 시스템 테스트...');
       await this.ffmpeg.writeFile('test.txt', 'test');
       await this.ffmpeg.deleteFile('test.txt');
+      console.log('✅ 파일 시스템 테스트 통과');
+      
+      // 2. 간단한 FFmpeg 명령어 테스트 (타임아웃 포함)
+      console.log('🔧 FFmpeg 명령어 테스트...');
+      try {
+        const testTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('FFmpeg 명령어 테스트 타임아웃')), 5000)
+        );
+        
+        const testPromise = this.ffmpeg.exec(['-version']);
+        await Promise.race([testPromise, testTimeout]);
+        console.log('✅ FFmpeg 명령어 테스트 성공');
+      } catch (versionError) {
+        console.warn('⚠️ FFmpeg 명령어 테스트 실패, 하지만 기본 기능은 작동할 수 있음:', versionError);
+      }
+      
       console.log('✅ FFmpeg 테스트 성공');
       return true;
     } catch (error) {
