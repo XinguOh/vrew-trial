@@ -1,7 +1,7 @@
 import { useLocation } from "react-router-dom";
 import React, { useState, useRef, useCallback } from "react";
 import { VideoPlayerSidebar, VideoOrderPanel } from "../../components/layout";
-import { SubtitleEditor } from "../../components/subtitle";
+import { SubtitleList } from "../../components/subtitle";
 import { ExportButton } from "../../components/ui";
 import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview, useSubtitleManager } from "../../hooks";
 import type { EditorPageProps } from "../../types";
@@ -121,7 +121,7 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
     const newWidth = (e.clientX / containerWidth) * 100;
     
     // 최소 15%, 최대 60%로 제한
-    const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
+    // const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
     // setVideoPanelWidth(clampedWidth);
   }, [isResizing]);
 
@@ -293,13 +293,16 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
 
         {/* 오른쪽 섹션 (3) - 자막 편집 */}
         <div className="w-3/5">
-          <SubtitleEditor
-            clips={clipManager.videoClips}
-            currentClipIndex={clipManager.currentClipIndex}
+          <SubtitleList
+            subtitles={subtitleManager.subtitles}
+            selectedSubtitleId={subtitleManager.selectedSubtitleId}
             isDarkMode={isDarkMode}
-            subtitleManager={subtitleManager}
             currentTime={videoPlayer.playerState.currentTime}
-            onSubtitleChange={setSubtitles}
+            onUpdate={subtitleManager.updateSubtitle}
+            onDelete={subtitleManager.deleteSubtitle}
+            onDuplicate={subtitleManager.duplicateSubtitle}
+            onSelect={subtitleManager.selectSubtitle}
+            onAddSubtitle={subtitleManager.addSubtitle}
           />
         </div>
       </div>
