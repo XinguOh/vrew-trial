@@ -36,6 +36,14 @@ export function SubtitleList({
     onAddSubtitle(startTime, endTime);
   };
 
+  const handleAddNewSubtitle = () => {
+    // 마지막 자막의 끝 시간을 기준으로 새 자막 추가
+    const lastSubtitle = subtitles[subtitles.length - 1];
+    const startTime = lastSubtitle ? lastSubtitle.endTime + 0.1 : 0;
+    const endTime = startTime + 3; // 기본 3초 길이
+    onAddSubtitle(startTime, endTime);
+  };
+
   return (
     <div className="space-y-4">
       {/* 헤더 */}
@@ -49,6 +57,16 @@ export function SubtitleList({
           </p>
         </div>
         <div className="flex space-x-2">
+          <button
+            onClick={handleAddNewSubtitle}
+            className={`px-3 py-1 text-sm rounded transition-colors ${
+              isDarkMode
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-green-500 text-white hover:bg-green-600'
+            }`}
+          >
+            + 자막 추가
+          </button>
           <button
             onClick={handleAddAtCurrentTime}
             className={`px-3 py-1 text-sm rounded transition-colors ${
@@ -88,7 +106,7 @@ export function SubtitleList({
           }`}>
             <div className="text-4xl mb-2">📝</div>
             <p className="text-sm">아직 자막이 없습니다</p>
-            <p className="text-xs mt-1">위의 버튼을 클릭하여 자막을 추가해보세요</p>
+            <p className="text-xs mt-1">위의 "자막 추가" 버튼을 클릭하여 자막을 추가해보세요</p>
           </div>
         ) : (
           subtitles.map((subtitle) => (
