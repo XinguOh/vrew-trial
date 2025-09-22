@@ -76,7 +76,7 @@ export function Timeline({
 
   // 드래그 시작
   const handleDragStart = (event: React.DragEvent, index: number) => {
-    setIsDragging(true);
+    // setIsDragging(true);
     setDraggedClipIndex(index);
     event.dataTransfer.effectAllowed = 'move';
   };
@@ -105,7 +105,7 @@ export function Timeline({
     
     onClipsReorder(newClips);
     
-    setIsDragging(false);
+    // setIsDragging(false);
     setDraggedClipIndex(null);
     setDragOverIndex(null);
   };

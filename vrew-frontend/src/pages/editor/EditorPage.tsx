@@ -1,6 +1,7 @@
 import { useLocation } from "react-router-dom";
 import React, { useState, useRef, useCallback } from "react";
-import { VideoPlayerSidebar, VideoOrderPanel, SubtitleEditor } from "../../components/layout";
+import { VideoPlayerSidebar, VideoOrderPanel } from "../../components/layout";
+import { SubtitleEditor } from "../../components/subtitle";
 import { ExportButton } from "../../components/ui";
 import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview, useSubtitleManager } from "../../hooks";
 import type { EditorPageProps } from "../../types";
@@ -121,7 +122,7 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
     
     // 최소 15%, 최대 60%로 제한
     const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
-    setVideoPanelWidth(clampedWidth);
+    // setVideoPanelWidth(clampedWidth);
   }, [isResizing]);
 
   const handleMouseUp = useCallback(() => {
