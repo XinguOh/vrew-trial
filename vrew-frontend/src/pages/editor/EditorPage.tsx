@@ -17,15 +17,15 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   const resizeRef = useRef<HTMLDivElement>(null);
 
   // 자막 상태
-  const [subtitles, setSubtitles] = useState<any[]>([]);
+  // const [subtitles, setSubtitles] = useState<any[]>([]);
 
   // 현재 재생 중인 자막 찾기
-  const getCurrentSubtitle = () => {
-    const currentTime = videoPlayer.playerState.currentTime;
-    return subtitles.find(sub => 
-      currentTime >= sub.startTime && currentTime <= sub.endTime
-    ) || null;
-  };
+  // const getCurrentSubtitle = () => {
+  //   const currentTime = videoPlayer.playerState.currentTime;
+  //   return subtitles.find(sub => 
+  //     currentTime >= sub.startTime && currentTime <= sub.endTime
+  //   ) || null;
+  // };
 
   // 커스텀 훅들
   const clipManager = useClipManager(initialVideoFile);
@@ -117,8 +117,8 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !resizeRef.current) return;
     
-    const containerWidth = resizeRef.current.parentElement?.offsetWidth || 0;
-    const newWidth = (e.clientX / containerWidth) * 100;
+    // const containerWidth = resizeRef.current.parentElement?.offsetWidth || 0;
+    // const newWidth = (e.clientX / containerWidth) * 100;
     
     // 최소 15%, 최대 60%로 제한
     // const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
