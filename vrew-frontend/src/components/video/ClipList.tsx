@@ -22,7 +22,6 @@ export function ClipList({
   isDarkMode,
   onClipSelect,
   onDeleteClip,
-  onAddClip,
   onDragStart,
   onDragOver,
   onDragLeave,

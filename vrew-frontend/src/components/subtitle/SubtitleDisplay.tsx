@@ -5,7 +5,7 @@ interface SubtitleDisplayProps {
   isDarkMode: boolean;
 }
 
-export function SubtitleDisplay({ subtitle, isDarkMode }: SubtitleDisplayProps) {
+export function SubtitleDisplay({ subtitle }: SubtitleDisplayProps) {
   if (!subtitle || !subtitle.text) {
     return null;
   }

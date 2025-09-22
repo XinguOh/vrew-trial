@@ -11,7 +11,7 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   const initialVideoFile = location.state?.videoFile;
 
   // 리사이즈 상태
-  const [videoPanelWidth, setVideoPanelWidth] = useState(20); // 20% 기본값
+  // const [videoPanelWidth, setVideoPanelWidth] = useState(20); // 20% 기본값
   const [isResizing, setIsResizing] = useState(false);
   const resizeRef = useRef<HTMLDivElement>(null);
 
@@ -108,10 +108,10 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   };
 
   // 리사이즈 핸들러들
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  }, []);
+  // const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   setIsResizing(true);
+  // }, []);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing || !resizeRef.current) return;

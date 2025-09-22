@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import type { VideoClip } from "../../types";
 
 interface TimelineProps {
@@ -21,7 +21,7 @@ export function Timeline({
   onClipSelect 
 }: TimelineProps) {
   const timelineRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  // const [isDragging, setIsDragging] = useState(false);
   const [draggedClipIndex, setDraggedClipIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 

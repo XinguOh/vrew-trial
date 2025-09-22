@@ -241,7 +241,7 @@ export class FallbackExportService {
   /**
    * 클립들을 개별적으로 ZIP 파일로 묶어서 내보내기
    */
-  static async exportAsZip(clips: VideoClip[]): Promise<{ blob: Blob; filename: string }> {
+  static async exportAsZip(_clips: VideoClip[]): Promise<{ blob: Blob; filename: string }> {
     // 이 기능은 추후 JSZip 라이브러리를 사용하여 구현할 수 있습니다
     throw new Error('ZIP 내보내기는 아직 구현되지 않았습니다.');
   }

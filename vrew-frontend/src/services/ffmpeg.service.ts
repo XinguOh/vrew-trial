@@ -84,7 +84,7 @@ export class FFmpegService {
           // 로드 완료 후 상태 확인
           console.log('🔍 FFmpeg 로드 후 상태 확인:');
           console.log('- ffmpeg.loaded:', this.ffmpeg.loaded);
-          console.log('- ffmpeg.canExecute:', this.ffmpeg.canExecute);
+          // console.log('- ffmpeg.canExecute:', this.ffmpeg.canExecute);
           
           if (this.ffmpeg.loaded) {
             loadSuccess = true;
@@ -121,12 +121,12 @@ export class FFmpegService {
   get isFFmpegLoaded(): boolean {
     const serviceLoaded = this.isLoaded;
     const instanceLoaded = this.ffmpeg.loaded;
-    const canExecute = this.ffmpeg.canExecute;
+    // const canExecute = this.ffmpeg.canExecute;
     
-    console.log(`FFmpeg 상태 체크 - 서비스: ${serviceLoaded}, 인스턴스: ${instanceLoaded}, 실행가능: ${canExecute}, 로딩중: ${this.isLoading}`);
+    console.log(`FFmpeg 상태 체크 - 서비스: ${serviceLoaded}, 인스턴스: ${instanceLoaded}, 로딩중: ${this.isLoading}`);
     
     // 더 엄격한 체크: 모든 조건이 true여야 함
-    return serviceLoaded && instanceLoaded && canExecute && !this.isLoading;
+    return serviceLoaded && instanceLoaded && !this.isLoading;
   }
   
   // FFmpeg가 실제로 작동하는지 테스트하는 메서드
@@ -135,7 +135,7 @@ export class FFmpegService {
       console.log('🧪 FFmpeg 테스트 시작...');
       console.log('- this.isLoaded:', this.isLoaded);
       console.log('- this.ffmpeg.loaded:', this.ffmpeg.loaded);
-      console.log('- this.ffmpeg.canExecute:', this.ffmpeg.canExecute);
+      // console.log('- this.ffmpeg.canExecute:', this.ffmpeg.canExecute);
       
       if (!this.isLoaded || !this.ffmpeg.loaded) {
         console.log('❌ FFmpeg 테스트 실패: 로드되지 않음');

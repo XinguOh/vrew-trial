@@ -13,20 +13,19 @@ export function SceneEditor({
   clips,
   currentClipIndex,
   isDarkMode,
-  onClipSelect,
   onAddClip
 }: SceneEditorProps) {
   const [selectedScenes, setSelectedScenes] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState<'video' | 'order' | 'subtitle'>('video');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleSceneSelect = (index: number) => {
-    setSelectedScenes(prev => 
-      prev.includes(index) 
-        ? prev.filter(i => i !== index)
-        : [...prev, index]
-    );
-  };
+  // const handleSceneSelect = (index: number) => {
+  //   setSelectedScenes(prev => 
+  //     prev.includes(index) 
+  //       ? prev.filter(i => i !== index)
+  //       : [...prev, index]
+  //   );
+  // };
 
   const handleSelectAll = () => {
     if (selectedScenes.length === clips.length) {
