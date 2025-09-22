@@ -114,7 +114,7 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   //   setIsResizing(true);
   // }, []);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
+  const handleMouseMove = useCallback((_e: MouseEvent) => {
     if (!isResizing || !resizeRef.current) return;
     
     // const containerWidth = resizeRef.current.parentElement?.offsetWidth || 0;
