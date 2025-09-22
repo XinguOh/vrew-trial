@@ -1,4 +1,3 @@
-// import { useState } from "react";
 
 interface MainBarProps {
   isDarkMode: boolean;
