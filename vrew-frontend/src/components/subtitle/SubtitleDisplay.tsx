@@ -2,6 +2,7 @@ import type { Subtitle } from '../../types';
 
 interface SubtitleDisplayProps {
   subtitle: Subtitle | null;
+  isDarkMode: boolean;
 }
 
 export function SubtitleDisplay({ subtitle }: SubtitleDisplayProps) {

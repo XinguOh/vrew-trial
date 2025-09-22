@@ -8,6 +8,7 @@ interface ClipListProps {
   isDarkMode: boolean;
   onClipSelect: (index: number) => void;
   onDeleteClip: (index: number) => void;
+  onAddClip: (file: File) => void;
   onDragStart: (event: React.DragEvent, index: number) => void;
   onDragOver: (event: React.DragEvent, index: number) => void;
   onDragLeave: (event: React.DragEvent) => void;

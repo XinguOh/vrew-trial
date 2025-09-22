@@ -5,6 +5,7 @@ interface SceneEditorProps {
   clips: VideoClip[];
   currentClipIndex: number;
   isDarkMode: boolean;
+  onClipSelect: (index: number) => void;
   onAddClip: (file: File) => void;
 }
 

@@ -1,9 +1,9 @@
 import { useLocation } from "react-router-dom";
-import React from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { VideoPlayerSidebar, VideoOrderPanel } from "../../components/layout";
 import { SubtitleList } from "../../components/subtitle";
 import { ExportButton } from "../../components/ui";
-import { useFFmpeg, useVideoPlayer, useClipManager, useSubtitleManager } from "../../hooks";
+import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview, useSubtitleManager } from "../../hooks";
 import type { EditorPageProps } from "../../types";
 import { VideoService } from "../../services";
 
@@ -11,10 +11,26 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   const location = useLocation();
   const initialVideoFile = location.state?.videoFile;
 
+  // 리사이즈 상태
+  // const [videoPanelWidth, setVideoPanelWidth] = useState(20); // 20% 기본값
+  const [isResizing, setIsResizing] = useState(false);
+  const resizeRef = useRef<HTMLDivElement>(null);
+
+  // 자막 상태
+  const [subtitles] = useState<any[]>([]);
+
+  // 현재 재생 중인 자막 찾기
+  const getCurrentSubtitle = () => {
+    const currentTime = videoPlayer.playerState.currentTime;
+    return subtitles.find(sub => 
+      currentTime >= sub.startTime && currentTime <= sub.endTime
+    ) || null;
+  };
 
   // 커스텀 훅들
   const clipManager = useClipManager(initialVideoFile);
   const { isFFmpegLoaded, ffmpegError, exportState, exportVideo, retryFFmpegInitialization } = useFFmpeg();
+  const hoverPreview = useHoverPreview();
   const subtitleManager = useSubtitleManager();
   
   const videoPlayer = useVideoPlayer({
@@ -36,7 +52,7 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
   };
 
   const handleVideoMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    // hoverPreview.handleMouseMove(event, videoPlayer.playerState.duration);
+    hoverPreview.handleMouseMove(event, videoPlayer.playerState.duration);
   };
 
   const handleLoadedMetadata = () => {
@@ -92,6 +108,48 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
     }
   };
 
+  // 리사이즈 핸들러들
+  // const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   setIsResizing(true);
+  // }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing || !resizeRef.current) return;
+    
+    // const containerWidth = resizeRef.current.parentElement?.offsetWidth || 0;
+    // const newWidth = (e.clientX / containerWidth) * 100;
+    
+    // 최소 15%, 최대 60%로 제한
+    // const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
+    // setVideoPanelWidth(clampedWidth);
+  }, [isResizing]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // 마우스 이벤트 리스너 등록
+  React.useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    } else {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
     <div className={`min-h-screen transition-colors ${
@@ -205,19 +263,19 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
             videoRef={videoPlayer.videoRef}
             currentClip={videoPlayer.currentClip}
             playerState={videoPlayer.playerState}
-            hoverPreview={null}
+            hoverPreview={hoverPreview.hoverPreview}
             isDarkMode={isDarkMode}
             onTimeUpdate={videoPlayer.handleTimeUpdate}
             onLoadedMetadata={handleLoadedMetadata}
             onVideoEnded={videoPlayer.handleVideoEnded}
-            onMouseEnter={() => {}}
-            onMouseLeave={() => {}}
+            onMouseEnter={hoverPreview.handleMouseEnter}
+            onMouseLeave={hoverPreview.handleMouseLeave}
             onMouseMove={handleVideoMouseMove}
             onTimeSeek={videoPlayer.handleTimeSeek}
             onPlayPause={videoPlayer.handlePlayPause}
             onVolumeChange={videoPlayer.handleVolumeChange}
             onToggleMute={videoPlayer.handleToggleMute}
-            currentSubtitle={null}
+            currentSubtitle={getCurrentSubtitle()}
           />
         </div>
 

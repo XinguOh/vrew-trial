@@ -64,6 +64,7 @@ export function VideoPlayerSidebar({
         {/* 자막 표시 */}
         <SubtitleDisplay
           subtitle={currentSubtitle}
+          isDarkMode={isDarkMode}
         />
         
         {/* VREW 로고 */}
