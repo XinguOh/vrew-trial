@@ -16,18 +16,6 @@ export function useFFmpeg() {
       let retryCount = 0;
       const maxRetries = 3;
 
-      // 브라우저 호환성 체크
-      console.log('🔍 브라우저 호환성 체크...');
-      console.log('WebAssembly 지원:', typeof WebAssembly !== 'undefined');
-      console.log('SharedArrayBuffer 지원:', typeof SharedArrayBuffer !== 'undefined');
-      console.log('User Agent:', navigator.userAgent);
-      
-      // SharedArrayBuffer가 없으면 경고 메시지
-      if (typeof SharedArrayBuffer === 'undefined') {
-        console.warn('⚠️ SharedArrayBuffer가 지원되지 않습니다. 이는 보안 정책 때문일 수 있습니다.');
-        console.warn('💡 해결 방법: HTTPS를 사용하거나 localhost에서 실행하세요.');
-      }
-
       while (retryCount < maxRetries && !isFFmpegLoaded) {
         try {
           console.log(`FFmpeg 초기화 시도 ${retryCount + 1}/${maxRetries}`);
@@ -53,16 +41,7 @@ export function useFFmpeg() {
           console.error(`FFmpeg 초기화 실패 (시도 ${retryCount}/${maxRetries}):`, errorMessage);
           
           if (retryCount >= maxRetries) {
-            setFFmpegError(`FFmpeg 로드 실패: ${errorMessage}. 
-
-⚠️ FFmpeg를 사용할 수 없지만, 브라우저 기본 기능으로 영상 추출이 가능합니다.
-
-해결 방법:
-1. "브라우저 기본 기능 사용" 버튼을 클릭하세요
-2. 브라우저를 새로고침해보세요
-3. 다른 브라우저(Chrome, Firefox)를 시도해보세요
-
-브라우저 기본 기능은 FFmpeg보다 느릴 수 있지만 안정적으로 작동합니다.`);
+            setFFmpegError(`FFmpeg 로드 실패: ${errorMessage}. 브라우저를 새로고침하거나 다른 브라우저를 시도해보세요.`);
           } else {
             // 재시도 전 잠시 대기
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -145,16 +124,14 @@ export function useFFmpeg() {
 
     // FFmpeg 없이도 사용할 수 있는 fallback 내보내기
     const exportVideoFallback = async (clips: VideoClip[]) => {
-      console.log('🔄 브라우저 기본 기능으로 내보내기 시작');
-      setExportState({ isExporting: true, progress: 0 });
+      console.log('FFmpeg fallback 내보내기 시작');
+      setExportState({ isExporting: true, progress: 50 });
 
       try {
         const result = await FallbackExportService.exportWithBrowserAPI(clips);
         setExportState({ isExporting: false, progress: 100 });
-        console.log('✅ 브라우저 기본 기능 내보내기 완료');
         return result;
       } catch (error) {
-        console.error('❌ 브라우저 기본 기능 내보내기 실패:', error);
         setExportState({ isExporting: false, progress: 0 });
         throw error;
       }

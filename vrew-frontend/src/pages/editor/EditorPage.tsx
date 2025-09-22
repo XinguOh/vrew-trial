@@ -1,23 +1,29 @@
 import { useLocation } from "react-router-dom";
-import React, { useState, useRef, useCallback } from "react";
-import { VideoPlayerSidebar, VideoOrderPanel } from "../../components/layout";
-import { SubtitleList } from "../../components/subtitle";
+import React, { useState } from "react";
+import { VideoPlayerSidebar, VideoOrderPanel, SubtitleEditor } from "../../components/layout";
 import { ExportButton } from "../../components/ui";
 import { useFFmpeg, useVideoPlayer, useClipManager, useHoverPreview, useSubtitleManager } from "../../hooks";
 import type { EditorPageProps } from "../../types";
 import { VideoService } from "../../services";
 
-export function EditorPage({ isDarkMode }: EditorPageProps) {
+export function EditorPage({ isDarkMode, onToggleDarkMode }: EditorPageProps) {
   const location = useLocation();
   const initialVideoFile = location.state?.videoFile;
 
-  // 리사이즈 상태
-  // const [videoPanelWidth, setVideoPanelWidth] = useState(20); // 20% 기본값
-  const [isResizing, setIsResizing] = useState(false);
-  const resizeRef = useRef<HTMLDivElement>(null);
+  // SubBar 표시/숨김 상태
+  const [isSubBarVisible, setIsSubBarVisible] = useState(true);
 
   // 자막 상태
-  const [subtitles] = useState<any[]>([]);
+  const [subtitles, setSubtitles] = useState<Array<{
+    startTime: number;
+    endTime: number;
+    text: string;
+  }>>([]);
+
+  // SubBar 토글 함수
+  const toggleSubBar = () => {
+    setIsSubBarVisible(!isSubBarVisible);
+  };
 
   // 현재 재생 중인 자막 찾기
   const getCurrentSubtitle = () => {
@@ -108,48 +114,6 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
     }
   };
 
-  // 리사이즈 핸들러들
-  // const handleMouseDown = useCallback((e: React.MouseEvent) => {
-  //   e.preventDefault();
-  //   setIsResizing(true);
-  // }, []);
-
-  const handleMouseMove = useCallback((_e: MouseEvent) => {
-    if (!isResizing || !resizeRef.current) return;
-    
-    // const containerWidth = resizeRef.current.parentElement?.offsetWidth || 0;
-    // const newWidth = (e.clientX / containerWidth) * 100;
-    
-    // 최소 15%, 최대 60%로 제한
-    // const clampedWidth = Math.min(Math.max(newWidth, 15), 60);
-    // setVideoPanelWidth(clampedWidth);
-  }, [isResizing]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(false);
-  }, []);
-
-  // 마우스 이벤트 리스너 등록
-  React.useEffect(() => {
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    } else {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   return (
     <div className={`min-h-screen transition-colors ${
@@ -190,6 +154,58 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
           <div className="flex items-center space-x-4">
             <button className="text-sm hover:text-blue-500 transition-colors">의견 보내기</button>
             <button className="text-sm hover:text-blue-500 transition-colors">업그레이드</button>
+            
+            {/* SubBar 토글 버튼 */}
+            <button
+              onClick={toggleSubBar}
+              className={`p-1.5 rounded-lg transition-colors ${
+                isDarkMode 
+                  ? 'hover:bg-gray-700 text-gray-300' 
+                  : 'hover:bg-gray-100 text-gray-600'
+              }`}
+              title={isSubBarVisible ? '도구바 숨기기' : '도구바 보이기'}
+            >
+              {isSubBarVisible ? (
+                // 숨기기 아이콘 (눈에 슬래시)
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                </svg>
+              ) : (
+                // 보이기 아이콘 (눈)
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </button>
+            
+            {/* 다크모드 토글 스위치 */}
+            <div className="flex items-center space-x-2">
+              {/* 라이트모드 아이콘 */}
+              <svg className={`w-4 h-4 transition-colors ${isDarkMode ? 'text-gray-500' : 'text-yellow-500'}`} fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+              </svg>
+              
+              {/* 토글 스위치 */}
+              <button
+                onClick={onToggleDarkMode}
+                className={`relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isDarkMode ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+                title={isDarkMode ? '라이트모드로 전환' : '다크모드로 전환'}
+              >
+                {/* 슬라이더 */}
+                <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform duration-300 shadow-md ${
+                  isDarkMode ? 'translate-x-6' : 'translate-x-0.5'
+                }`}></div>
+              </button>
+              
+              {/* 다크모드 아이콘 */}
+              <svg className={`w-4 h-4 transition-colors ${isDarkMode ? 'text-blue-400' : 'text-gray-400'}`} fill="currentColor" viewBox="0 0 20 20">
+                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+              </svg>
+            </div>
+            
             <ExportButton
               isFFmpegLoaded={isFFmpegLoaded}
               ffmpegError={ffmpegError}
@@ -202,61 +218,65 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
           </div>
         </div>
         
-        {/* 편집 도구바 */}
-        <div className={`flex items-center justify-between px-6 py-2 border-t ${
-          isDarkMode ? 'border-gray-700' : 'border-gray-200'
-        }`}>
-          <div className="flex items-center space-x-4">
-            <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
-              isDarkMode 
-                ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                : 'bg-blue-500 text-white hover:bg-blue-600'
-            }`}>
-              새로 만들기
-            </button>
-            <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
-              isDarkMode 
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}>
-              프로젝트 열기
-            </button>
+        {/* 편집 도구바 - 조건부 렌더링 */}
+        {isSubBarVisible && (
+          <div className={`flex items-center justify-between px-6 py-2 border-t ${
+            isDarkMode ? 'border-gray-700' : 'border-gray-200'
+          }`}>
+            <div className="flex items-center space-x-4">
+              <button className={`px-3 py-1.5 text-sm rounded transition-colors ${
+                isDarkMode 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}>
+                새로 만들기
+              </button>
+              <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+                isDarkMode 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}>
+                프로젝트 열기
+              </button>
+              
+              <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
+              
+            </div>
             
-            <div className={`w-px h-6 mx-2 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-300'}`}></div>
-            
+            <div className="flex items-center space-x-4">
+              <select className={`px-2 py-1 text-sm rounded border ${
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}>
+                <option>Pretendard</option>
+              </select>
+              <select className={`px-2 py-1 text-sm rounded border ${
+                isDarkMode 
+                  ? 'bg-gray-800 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}>
+                <option>100</option>
+              </select>
+              <button className={`w-8 h-8 rounded border ${
+                isDarkMode ? 'border-gray-600' : 'border-gray-300'
+              }`}></button>
+              <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
+                isDarkMode 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+              }`}>
+                [서식] 메뉴로 이동
+              </button>
+            </div>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <select className={`px-2 py-1 text-sm rounded border ${
-              isDarkMode 
-                ? 'bg-gray-800 border-gray-600 text-white' 
-                : 'bg-white border-gray-300 text-gray-900'
-            }`}>
-              <option>Pretendard</option>
-            </select>
-            <select className={`px-2 py-1 text-sm rounded border ${
-              isDarkMode 
-                ? 'bg-gray-800 border-gray-600 text-white' 
-                : 'bg-white border-gray-300 text-gray-900'
-            }`}>
-              <option>100</option>
-            </select>
-            <button className={`w-8 h-8 rounded border ${
-              isDarkMode ? 'border-gray-600' : 'border-gray-300'
-            }`}></button>
-            <button className={`px-3 py-1.5 text-sm rounded border transition-colors ${
-              isDarkMode 
-                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
-                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}>
-              [서식] 메뉴로 이동
-            </button>
-          </div>
-        </div>
+        )}
       </nav>
 
       {/* 메인 편집 영역 - 1:1:3 비율 */}
-      <div className="pt-24 h-screen flex">
+      <div className={`transition-all duration-300 h-screen flex ${
+        isSubBarVisible ? 'pt-24' : 'pt-16'
+      }`}>
         {/* 왼쪽 섹션 (1) - 영상 플레이어 */}
         <div className="w-1/5 border-r">
           <VideoPlayerSidebar
@@ -293,19 +313,18 @@ export function EditorPage({ isDarkMode }: EditorPageProps) {
 
         {/* 오른쪽 섹션 (3) - 자막 편집 */}
         <div className="w-3/5">
-          <SubtitleList
-            subtitles={subtitleManager.subtitles}
-            selectedSubtitleId={subtitleManager.selectedSubtitleId}
+          <SubtitleEditor
+            clips={clipManager.videoClips}
+            currentClipIndex={clipManager.currentClipIndex}
             isDarkMode={isDarkMode}
+            subtitleManager={subtitleManager}
             currentTime={videoPlayer.playerState.currentTime}
-            onUpdate={subtitleManager.updateSubtitle}
-            onDelete={subtitleManager.deleteSubtitle}
-            onDuplicate={subtitleManager.duplicateSubtitle}
-            onSelect={subtitleManager.selectSubtitle}
-            onAddSubtitle={subtitleManager.addSubtitle}
+            onSubtitleChange={setSubtitles}
           />
         </div>
       </div>
     </div>
   );
 }
+
+
